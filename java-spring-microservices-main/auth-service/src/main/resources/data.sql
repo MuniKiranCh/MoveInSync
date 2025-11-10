@@ -6,7 +6,7 @@
 
 -- Super Admin User (email: admin@moveinsync.com, password: password)
 -- MoveInSync internal admin who manages all clients/companies
-INSERT INTO users (id, email, password, role, tenant_id, first_name, last_name, active)
+INSERT IGNORE INTO users (id, email, password, role, tenant_id, first_name, last_name, active)
 VALUES (
     UNHEX(REPLACE('11111111-1111-1111-1111-111111111111', '-', '')),
     'admin@moveinsync.com',
@@ -20,7 +20,7 @@ VALUES (
 
 -- Client User for Amazon India (email: admin@amazon.in, password: password)
 -- CLIENT role - manages their company's employees
-INSERT INTO users (id, email, password, role, tenant_id, first_name, last_name, active)
+INSERT IGNORE INTO users (id, email, password, role, tenant_id, first_name, last_name, active)
 VALUES (
     UNHEX(REPLACE('22222222-2222-2222-2222-222222222222', '-', '')),
     'admin@amazon.in',
@@ -33,7 +33,7 @@ VALUES (
 );
 
 -- Vendor User (email: vendor@ola.com, password: password)
-INSERT INTO users (id, email, password, role, tenant_id, vendor_id, first_name, last_name, active)
+INSERT IGNORE INTO users (id, email, password, role, tenant_id, vendor_id, first_name, last_name, active)
 VALUES (
     UNHEX(REPLACE('33333333-3333-3333-3333-333333333333', '-', '')),
     'vendor@ola.com',
