@@ -4,3 +4,10 @@
 # But keep README.md specifically
 !README.md
 
+# Ignore all other markdown documentation files except README.md
+DOCKER_MIGRATION_COMPLETE.md
+FINAL_PROJECT_SUMMARY.md
+MOVEINSYNC_FINAL_COMPLETION_REPORT.md
+QUICK_START_GUIDE.md
+SETUP_GUIDE.md
+
