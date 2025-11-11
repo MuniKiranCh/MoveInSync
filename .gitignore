@@ -11,3 +11,14 @@ MOVEINSYNC_FINAL_COMPLETION_REPORT.md
 QUICK_START_GUIDE.md
 SETUP_GUIDE.md
 
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.env
+application-local.properties
+
+# Database credentials
+**/application-dev.properties
+**/application-prod.properties
+
