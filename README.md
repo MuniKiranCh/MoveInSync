@@ -1,291 +1,517 @@
-# 🚀 MoveInSync - Employee Transportation Management System
+# 🚀 MoveInSync - Unified Billing & Reporting Platform
 
-A comprehensive full-stack microservices-based platform for managing employee transportation, vendor coordination, and billing operations.
+A complete **microservices-based** transportation management and billing platform for corporate employee transport services. Built with **Spring Boot** (backend) and **React + Vite** (frontend).
 
-## 📋 Project Overview
+---
 
-MoveInSync is a multi-tenant B2B SaaS platform that helps companies manage their employee transportation needs. The system connects clients (companies), vendors (transportation providers), and employees through a unified platform with role-based access control.
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Services & Ports](#services--ports)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Database Setup](#database-setup)
+- [API Documentation](#api-documentation)
+- [Test Credentials](#test-credentials)
+- [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## 🎯 Overview
+
+MoveInSync is an enterprise transportation management system that handles:
+
+- **Multi-tenant architecture** - Supports multiple corporate clients
+- **Vendor management** - Manage transportation vendors (Ola, Uber, etc.)
+- **Employee transport** - Track employee commute trips
+- **Flexible billing** - TRIP-based, PACKAGE-based, or HYBRID models
+- **Automated calculations** - Real-time billing with GST
+- **Incentive management** - Employee and vendor incentives
+- **Comprehensive reports** - Client, Vendor, Employee, and Consolidated reports
+- **Role-based access** - ADMIN, CLIENT, VENDOR, EMPLOYEE, FINANCE_TEAM roles
+
+---
 
 ## 🏗️ Architecture
 
-### Backend - Spring Boot Microservices
-- **Auth Service** (Port 4005) - JWT authentication, user management, multi-tenancy
-- **Client Service** (Port 4010) - Company/client management
-- **Vendor Service** (Port 4015) - Transportation vendor management
-- **Trip Service** (Port 4020) - Trip scheduling and management
-- **Billing Service** (Port 4025) - Invoice and billing operations
-- **Analytics Service** (Port 4030) - Reporting and analytics
+### Microservices
 
-### Frontend - React with Vite
-- Modern React 18 with Hooks
-- Tailwind CSS for styling
-- React Router for navigation
-- Axios for API communication
-- Context API for state management
+| Service | Port | Description |
+|---------|------|-------------|
+| **Auth Service** | 4005 | JWT authentication & user management |
+| **Client Service** | 4010 | Corporate client management |
+| **Vendor Service** | 4015 | Transportation vendor management |
+| **Trip Service** | 4020 | Trip tracking and management |
+| **Billing Service** | 4025 | Billing calculations, reports & invoice generation |
+| **Employee Service** | 4035 | Employee management & incentives |
 
-### Database
-- **MySQL** - Auth Service (persistent user data)
-- **H2 In-Memory** - Other microservices (development)
+### Frontend
 
-## 🚀 Quick Start
+| App | Port | Description |
+|-----|------|-------------|
+| **React Frontend** | 5173 | User interface (Admin, Client, Vendor, Employee dashboards) |
 
-### Prerequisites
-- Java 17+
-- Maven 3.6+
-- Node.js 16+
-- MySQL 8.0+
+---
 
-### 1. Database Setup
+## ⚡ Quick Start
 
-```sql
-CREATE DATABASE moveinsync_auth;
-CREATE USER 'moveinsync'@'localhost' IDENTIFIED BY 'moveinsync123';
-GRANT ALL PRIVILEGES ON moveinsync_auth.* TO 'moveinsync'@'localhost';
-FLUSH PRIVILEGES;
-```
+### Method 1: 🐳 Docker (Recommended)
 
-### 2. Start Backend Services
+**Prerequisites:**
+- **Docker** 20.10+ ([Install Docker](https://docs.docker.com/get-docker/))
+- **Docker Compose** 2.0+ (included with Docker Desktop)
+- **Node.js 18+** and **npm** (for React frontend)
 
-**Option A: Use the batch script (Windows)**
-```bash
-START_ALL_SERVICES.bat
-```
-
-**Option B: Manual start**
-```bash
-# Auth Service
-cd java-spring-microservices-main/auth-service
-mvn spring-boot:run
-
-# Client Service
-cd java-spring-microservices-main/client-service
-mvn spring-boot:run
-
-# Vendor Service
-cd java-spring-microservices-main/vendor-service
-mvn spring-boot:run
-
-# Trip Service
-cd java-spring-microservices-main/trip-service
-mvn spring-boot:run
-
-# Billing Service
-cd java-spring-microservices-main/billing-service
-mvn spring-boot:run
-
-# Analytics Service
-cd java-spring-microservices-main/analytics-service
-mvn spring-boot:run
-```
-
-### 3. Start Frontend
+#### Start Backend Services
 
 ```bash
-cd movein-sync-frontend
+# Navigate to backend folder
+cd backend
+
+# Start all services (builds images if needed)
+docker-compose up --build -d
+
+# View logs
+docker-compose logs -f
+
+# Check service status
+docker-compose ps
+
+# Stop services
+docker-compose down
+```
+
+**All backend services will be available on `localhost:4005-4035`**
+
+#### Start Frontend
+
+```bash
+# Navigate to frontend folder
+cd frontend
+
+# Install dependencies (first time only)
+npm install
+
+# Start development server
+npm run dev
+
+# Access at: http://localhost:5173
+```
+
+### Method 2: 💻 Local Development (Without Docker)
+
+**Prerequisites:**
+- **Java 17+** 
+- **Maven 3.8+**
+- **Node.js 18+** and **npm**
+- **MySQL 8.0+**
+
+#### 1. Setup MySQL Database
+
+```bash
+# Start MySQL and ensure it's running on port 3306
+# Databases will be auto-created on first service startup
+```
+
+**MySQL Configuration:**
+- Username: `root`
+- Password: `Qwerty@cs12345`
+- Port: `3306`
+
+> ⚠️ **Note:** Update passwords in `backend/*/src/main/resources/application.properties`
+
+#### 2. Start Each Service Manually
+
+```bash
+# Open 7 separate terminals and run:
+
+# Terminal 1: Auth Service
+cd backend/auth-service
+mvn spring-boot:run
+
+# Terminal 2: Client Service
+cd backend/client-service
+mvn spring-boot:run
+
+# Terminal 3: Vendor Service
+cd backend/vendor-service
+mvn spring-boot:run
+
+# Terminal 4: Trip Service
+cd backend/trip-service
+mvn spring-boot:run
+
+# Terminal 5: Billing Service
+cd backend/billing-service
+mvn spring-boot:run
+
+# Terminal 6: Employee Service
+cd backend/employee-service
+mvn spring-boot:run
+```
+
+#### 3. Start Frontend
+
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+---
 
-## 🔑 Demo Credentials
+## 🌐 Services & Ports
 
-| Role | Email | Password |
-|------|-------|----------|
-| **Super Admin** | admin@moveinsync.com | password |
-| **Client Admin** | admin@amazon.in | password |
-| **Vendor** | vendor@ola.com | password |
+All services run on `localhost`:
 
-## 🎯 Key Features
+- **Backend Services:** `4005, 4010, 4015, 4020, 4025, 4035` (6 services)
+- **Frontend:** `5173`
+- **MySQL:** `3306`
 
-### For Super Admins
-- ✅ Manage all clients and vendors
-- ✅ View platform-wide analytics
-- ✅ Monitor all trips and billing
-- ✅ User management across tenants
+### Health Checks
 
-### For Client Companies
-- ✅ Manage company employees
-- ✅ Assign transportation vendors
-- ✅ Configure billing models (subscription/per-trip)
-- ✅ View trip history and reports
-- ✅ Dashboard with company metrics
+```bash
+# Check if service is running
+curl http://localhost:4005/actuator/health   # Auth Service
+curl http://localhost:4010/clients          # Client Service
+curl http://localhost:4015/vendors          # Vendor Service
+curl http://localhost:4020/trips            # Trip Service
+curl http://localhost:4025/billing-accounts # Billing Service (includes reports)
+curl http://localhost:4035/employees        # Employee Service
+```
 
-### For Vendors
-- ✅ View assigned clients
-- ✅ Manage trip assignments
-- ✅ Track vehicle fleet
-- ✅ Invoice generation
-- ✅ Performance metrics
+---
 
-### For Employees
-- ✅ View personal trip history
-- ✅ Book trips (if applicable)
-- ✅ Track current rides
-- ✅ Access route information
+## ✨ Features
+
+### 1. **Multi-Tenant & Role-Based Access**
+- Separate data for each corporate client (tenant isolation)
+- 5 roles: ADMIN, CLIENT, VENDOR, EMPLOYEE, FINANCE_TEAM
+- JWT-based authentication with role-based authorization
+
+### 2. **Flexible Billing Models**
+- **TRIP Model:** Pay per trip (₹/km + ₹/hour)
+- **PACKAGE Model:** Fixed monthly cost (included KM/hours, extra charges)
+- **HYBRID Model:** Combine both models
+
+### 3. **Automated Calculations**
+- Real-time trip cost calculation
+- GST calculation (5%, 12%, 18%, 28%)
+- Base cost + Extra KM + Extra hours
+- Monthly billing aggregation
+
+### 4. **Incentive Management**
+- Employee incentives based on:
+  - Distance traveled
+  - Trips completed
+  - Off-peak usage bonuses
+- Vendor incentives based on:
+  - Total trips
+  - Distance covered
+  - Performance ratings
+
+### 5. **Comprehensive Reporting**
+- **Client Reports:** Total costs, trip counts, employee usage
+- **Vendor Reports:** Earnings, trip statistics, ratings
+- **Employee Reports:** Individual trip history, incentives earned
+- **Consolidated Reports:** Cross-client analytics for admins
+
+### 6. **Employee Management**
+- Employee profiles with department, designation
+- Trip history tracking
+- Incentive accumulation
+- Active/inactive status management
+
+---
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Framework:** Spring Boot 3.4.1
+- **Database:** MySQL 8.0 with JPA/Hibernate
+- **Security:** Spring Security + JWT
+- **Communication:** REST APIs + gRPC
+- **Build Tool:** Maven
+- **Java Version:** 17+
+
+### Frontend
+- **Framework:** React 18
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS
+- **HTTP Client:** Axios
+- **State Management:** React Context API
+- **Routing:** React Router v6
+- **Notifications:** React Hot Toast
+
+### Database
+- **MySQL 8.0+**
+- **Schema:** Auto-generated by Hibernate
+- **Data Initialization:** `data.sql` scripts with sample data
+
+---
+
+## 💾 Database Setup
+
+Each service creates its own database automatically on first startup:
+
+```sql
+-- Databases created automatically:
+unified_billing_auth        -- Users, roles, authentication
+unified_billing_clients     -- Corporate clients
+unified_billing_vendors     -- Transportation vendors
+unified_billing_trips       -- Trip records
+unified_billing_billing     -- Billing accounts, invoices
+unified_billing_analytics   -- Analytics data
+unified_billing_employees   -- Employee records
+```
+
+**Configuration:**
+Each service's `application.properties` has:
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/[database_name]?createDatabaseIfNotExist=true
+spring.datasource.username=root
+spring.datasource.password=Qwerty@cs12345
+spring.jpa.hibernate.ddl-auto=update
+spring.sql.init.mode=always
+```
+
+---
+
+## 📚 API Documentation
+
+### Swagger UI (OpenAPI)
+
+Access interactive API documentation at:
+
+- Auth Service: http://localhost:4005/swagger-ui.html
+- Client Service: http://localhost:4010/swagger-ui.html
+- Vendor Service: http://localhost:4015/swagger-ui.html
+- Trip Service: http://localhost:4020/swagger-ui.html
+- Billing Service: http://localhost:4025/swagger-ui.html
+- Employee Service: http://localhost:4035/swagger-ui.html
+
+### Sample API Calls
+
+#### 1. Login (Get JWT Token)
+```bash
+curl -X POST http://localhost:4005/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@moveinsync.com","password":"password"}'
+
+# Returns: {"token":"eyJhbGc...", "role":"ADMIN", ...}
+```
+
+#### 2. Get All Clients (with JWT)
+```bash
+curl -X GET http://localhost:4010/clients \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### 3. Create Trip
+```bash
+curl -X POST http://localhost:4020/trips \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clientId": "a1111111-1111-1111-1111-111111111111",
+    "vendorId": "11111111-1111-1111-1111-111111111111",
+    "employeeId": "44444444-4444-4444-4444-444444444444",
+    "vehicleNumber": "KA-01-AB-1234",
+    "pickupLocation": "Home",
+    "dropLocation": "Office",
+    "distanceKm": 15.5,
+    "tripType": "HOME_TO_OFFICE",
+    "status": "COMPLETED"
+  }'
+```
+
+---
+
+## 🔐 Test Credentials
+
+### Pre-loaded Users
+
+| Role | Email | Password | Description |
+|------|-------|----------|-------------|
+| **ADMIN** | admin@moveinsync.com | password | System administrator |
+| **CLIENT** | admin@amazon.in | password | Amazon India admin |
+| **VENDOR** | vendor@ola.com | password | Ola vendor account |
+
+### Pre-loaded Employees
+
+| Name | Email | Company | Trips |
+|------|-------|---------|-------|
+| Priya Patel | priya.patel@amazon.in | Amazon | 25 |
+| Rahul Sharma | rahul.sharma@amazon.in | Amazon | 40 |
+| Anita Kumar | anita.kumar@amazon.in | Amazon | 32 |
+
+---
 
 ## 📁 Project Structure
 
 ```
 MoveInSync/
-├── java-spring-microservices-main/
-│   ├── auth-service/           # Authentication & User Management
-│   ├── client-service/         # Client/Company Management
-│   ├── vendor-service/         # Vendor Management
-│   ├── trip-service/           # Trip & Billing Model Management
-│   ├── billing-service/        # Invoice & Billing
-│   └── analytics-service/      # Reporting & Analytics
-├── movein-sync-frontend/       # React Frontend Application
-├── START_ALL_SERVICES.bat      # Windows batch script to start all services
-└── README.md                   # This file
+├── backend/                          # Backend microservices (Docker-ready)
+│   ├── docker-compose.yml            # Docker orchestration
+│   ├── .dockerignore                 # Docker ignore file
+│   ├── .gitignore                    # Git ignore file
+│   ├── README.md                     # Backend documentation
+│   ├── auth-service/                 # Authentication & JWT
+│   │   ├── Dockerfile
+│   │   ├── pom.xml
+│   │   └── src/
+│   ├── client-service/               # Client management
+│   │   ├── Dockerfile
+│   │   ├── pom.xml
+│   │   └── src/
+│   ├── vendor-service/               # Vendor management
+│   │   ├── Dockerfile
+│   │   ├── pom.xml
+│   │   └── src/
+│   ├── trip-service/                 # Trip tracking
+│   │   ├── Dockerfile
+│   │   ├── pom.xml
+│   │   └── src/
+│   ├── billing-service/              # Billing & invoicing
+│   │   ├── Dockerfile
+│   │   ├── pom.xml
+│   │   └── src/
+│   ├── analytics-service/            # Analytics (gRPC)
+│   │   ├── Dockerfile
+│   │   ├── pom.xml
+│   │   └── src/
+│   └── employee-service/             # Employee management
+│       ├── Dockerfile
+│       ├── pom.xml
+│       └── src/
+├── frontend/                         # React frontend (Vite)
+│   ├── src/
+│   │   ├── components/               # Reusable components
+│   │   ├── pages/                    # Page components
+│   │   ├── contexts/                 # Auth context
+│   │   └── utils/                    # API utilities
+│   ├── package.json
+│   └── README.md
+├── QUICK_START_GUIDE.md              # Detailed setup guide
+├── EMPLOYEE_ID_VALIDATION_GUIDE.md   # Important: Employee ID best practices
+├── MOVEINSYNC_FINAL_COMPLETION_REPORT.md  # Project completion report
+└── README.md                         # This file
 ```
 
-## 🔧 Technology Stack
-
-### Backend
-- **Framework**: Spring Boot 3.x
-- **Security**: Spring Security with JWT
-- **Database**: MySQL (Auth), H2 (Others)
-- **Build Tool**: Maven
-- **API**: RESTful APIs
-- **Password Hashing**: BCrypt
-
-### Frontend
-- **Framework**: React 18
-- **Bundler**: Vite
-- **Styling**: Tailwind CSS
-- **Routing**: React Router v6
-- **HTTP Client**: Axios
-- **State Management**: Context API
-- **Notifications**: React Hot Toast
-
-## 🔐 Security Features
-
-- JWT-based authentication
-- Role-based access control (RBAC)
-- Multi-tenant data isolation
-- BCrypt password hashing
-- Secure HTTP-only token storage
-- CORS configuration
-- Protected API endpoints
-
-## 📊 Data Model
-
-### User Roles
-- `ADMIN` - Platform super admin
-- `CLIENT` - Company administrator
-- `VENDOR` - Transportation vendor
-- `EMPLOYEE` - Company employee
-
-### Multi-Tenancy
-- Each client company has a unique `tenantId`
-- Data isolation enforced at the service level
-- Vendors can serve multiple clients
-- Employees belong to a single tenant
-
-## 🚧 Development Workflow
-
-1. **Backend Changes**
-   - Modify service code
-   - Restart specific service
-   - Test API endpoint
-
-2. **Frontend Changes**
-   - Vite hot-reload enabled
-   - Save file to see changes
-   - No manual restart needed
-
-3. **Database Changes**
-   - Update `data.sql` or `schema.sql`
-   - Restart Auth Service
-   - MySQL data persists
-
-## 📝 API Endpoints
-
-### Auth Service (4005)
-- `POST /login` - User login
-- `POST /register` - Client company registration
-- `POST /create-user` - Create new user
-- `GET /users` - Get all users (Admin)
-- `GET /users/tenant/{id}` - Get users by tenant
-- `PUT /users/{id}` - Update user details
-
-### Client Service (4010)
-- `GET /clients` - List all clients
-- `POST /clients` - Create client
-- `PUT /clients/{id}` - Update client
-- `DELETE /clients/{id}` - Delete client
-
-### Vendor Service (4015)
-- `GET /vendors` - List all vendors
-- `GET /vendors/active` - List active vendors
-- `POST /vendors` - Create vendor
-- `PUT /vendors/{id}` - Update vendor
-
-### Trip Service (4020)
-- `GET /trips` - List all trips
-- `GET /trips/client/{id}` - Trips by client
-- `GET /trips/vendor/{id}` - Trips by vendor
-- `POST /trips` - Create trip
-
-### Billing Service (4025)
-- `GET /billing-models` - List billing models
-- `GET /billing-models/client/{id}` - Models by client
-- `POST /billing-models` - Create billing model
+---
 
 ## 🐛 Troubleshooting
 
 ### Services Won't Start
-```bash
-# Check if ports are in use
-netstat -ano | findstr "4005"
-netstat -ano | findstr "4010"
 
-# Kill process if needed
+**Issue:** Port already in use
+```bash
+# Find process using port (example: 4005)
+netstat -ano | findstr :4005
+
+# Kill the process
 taskkill /PID <process_id> /F
 ```
 
-### Database Connection Issues
+**Issue:** MySQL connection refused
+- Ensure MySQL is running: `net start MySQL80`
+- Check credentials in `application.properties`
+- Verify port `3306` is open
+
+### Database Errors
+
+**Issue:** "Duplicate entry" error
+- This is handled automatically with `INSERT IGNORE`
+- If issue persists, delete and recreate databases
+
+**Issue:** "Table doesn't exist"
+- Ensure `spring.jpa.hibernate.ddl-auto=update` in `application.properties`
+- Check `spring.sql.init.mode=always` to run `data.sql`
+
+### Frontend Issues
+
+**Issue:** "Network Error" or "ERR_CONNECTION_REFUSED"
+- Ensure all 7 backend services are running
+- Check service logs for "Started [Service]Application"
+- Verify ports in `frontend/src/utils/api.js` match backend
+
+**Issue:** "Cannot find module" or build errors
 ```bash
-# Test MySQL connection
-mysql -u moveinsync -p moveinsync_auth
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
+npm run dev
 ```
 
-### Frontend Connection Refused
-- Ensure all backend services are running
-- Check `src/utils/api.js` for correct ports
-- Verify CORS is enabled in backend
+### Authentication Issues
 
-## 📈 Future Enhancements
+**Issue:** "Invalid token" or "Unauthorized"
+- Token expires after 24 hours (configurable in Auth Service)
+- Re-login to get a new token
+- Check that Authorization header is: `Bearer YOUR_TOKEN`
 
-- [ ] Real-time trip tracking with WebSocket
-- [ ] Mobile app for employees
-- [ ] Advanced route optimization
-- [ ] Integration with mapping services
-- [ ] Automated billing calculations
-- [ ] Email notifications
-- [ ] Advanced analytics dashboard
-- [ ] Multi-language support
+### Important: Employee ID Validation
 
-## 👥 Contributing
+⚠️ **Common Issue:** Trips showing for wrong employee
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+**Cause:** Using incorrect employee IDs when creating trips
 
-## 📄 License
+**Solution:** Always fetch employee ID from Employee Service after creation. Never manually type UUIDs!
 
-This project is part of a technical assessment and is for demonstration purposes.
-
-## 📞 Support
-
-For issues or questions:
-- Check the documentation in individual service folders
-- Review the `*_GUIDE.md` files in the project root
-- Contact the development team
+See `EMPLOYEE_ID_VALIDATION_GUIDE.md` for details.
 
 ---
 
-**Built with ❤️ using Spring Boot and React**
+## 📖 Additional Documentation
+
+- **QUICK_START_GUIDE.md** - Detailed step-by-step setup
+- **EMPLOYEE_ID_VALIDATION_GUIDE.md** - Best practices for employee IDs
+- **MOVEINSYNC_FINAL_COMPLETION_REPORT.md** - Project completion report
+
+---
+
+## 🚀 Next Steps
+
+1. **Configure for Production:**
+   - Update MySQL passwords in all `application.properties`
+   - Configure proper JWT secret keys
+   - Set up HTTPS/SSL
+   - Configure CORS for production domain
+
+2. **Add Monitoring:**
+   - Spring Boot Actuator endpoints are enabled
+   - Add Prometheus + Grafana for metrics
+   - Set up ELK stack for log aggregation
+
+3. **Deployment:**
+   - Dockerize services (Dockerfiles included in some services)
+   - Deploy to Kubernetes or cloud platform
+   - Set up CI/CD pipeline
+
+4. **Enhancements:**
+   - Add notification service (email/SMS)
+   - Implement real-time trip tracking
+   - Add mobile app support
+   - Enhanced analytics dashboard
+
+---
+
+## 📄 License
+
+This project is for educational/interview purposes as part of the MoveInSync case study.
+
+---
+
+## 🤝 Support
+
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review service logs in the terminal windows
+3. Check `QUICK_START_GUIDE.md` and `EMPLOYEE_ID_VALIDATION_GUIDE.md`
+
+---
+
+**Built with ❤️ for MoveInSync Case Study**

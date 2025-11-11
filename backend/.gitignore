@@ -1,0 +1,45 @@
+# Maven build artifacts
+**/target/
+**/bin/
+
+# IDE files
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+
+# Application properties (if they contain secrets)
+# Uncomment if you have sensitive data:
+# **/application-prod.properties
+# **/application-prod.yml
+
+# Docker volumes
+docker-volumes/
+
+# Environment files with secrets
+.env
+.env.local
+.env.prod
+
+# Maven wrapper (optional, can be removed if needed)
+.mvn/wrapper/maven-wrapper.jar

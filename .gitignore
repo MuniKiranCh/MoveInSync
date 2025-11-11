@@ -1,0 +1,6 @@
+# Ignore all readme file variations except README.md
+[Rr][Ee][Aa][Dd][Mm][Ee]
+[Rr][Ee][Aa][Dd][Mm][Ee].*
+# But keep README.md specifically
+!README.md
+
