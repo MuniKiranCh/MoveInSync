@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { tripApi, vendorApi } from '../utils/api'
 import { 
   TrendingUp, MapPin, DollarSign, Calendar, 
-  CheckCircle, Clock, Download, FileText, AlertCircle
+  CheckCircle, Clock, Download, FileText, AlertCircle, Package
 } from 'lucide-react'
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -29,18 +29,27 @@ const VendorDashboard = () => {
   const [trips, setTrips] = useState([])
   const [billingDetails, setBillingDetails] = useState(null)
   const [monthlyData, setMonthlyData] = useState([])
+  const [subscriptionPackages, setSubscriptionPackages] = useState([])
 
   useEffect(() => {
-    if (user?.vendorId) {
+    if (user?.email && user?.role === 'VENDOR') {
       fetchVendorData()
     }
-  }, [selectedMonth, user?.vendorId])
+  }, [selectedMonth, user?.email])
 
   const fetchVendorData = async () => {
     setLoading(true)
     try {
+      // Fetch vendor's subscription packages using email
+      const packagesResponse = await vendorApi.get(`/api/subscription-packages/vendor/email/${user.email}/active`)
+      setSubscriptionPackages(packagesResponse.data || [])
+
+      // Fetch vendor details to get vendorId
+      const vendorResponse = await vendorApi.get(`/vendors/email/${user.email}`)
+      const vendorId = vendorResponse.data?.id
+
       // Fetch vendor's billing models
-      const billingModelsResponse = await tripApi.get(`/billing-models/vendor/${user.vendorId}/active`)
+      const billingModelsResponse = await tripApi.get(`/billing-models/vendor/${vendorId}/active`)
       const models = billingModelsResponse.data
       
       if (models && models.length > 0) {
@@ -76,7 +85,11 @@ const VendorDashboard = () => {
 
     } catch (error) {
       console.error('Error fetching vendor data:', error)
-      toast.error('Failed to load vendor data')
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        toast.error('Backend services are starting up. Please wait a moment and refresh...')
+      } else {
+        toast.error('Failed to load vendor data: ' + (error.response?.data?.message || error.message))
+      }
     } finally {
       setLoading(false)
     }
@@ -221,6 +234,138 @@ const VendorDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Subscription Packages Offered */}
+      {subscriptionPackages.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <Package className="text-primary-600" size={24} />
+                Your Subscription Packages
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Packages available for clients to subscribe to
+              </p>
+            </div>
+            <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+              {subscriptionPackages.length} {subscriptionPackages.length === 1 ? 'Package' : 'Packages'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {subscriptionPackages.map((pkg) => (
+              <div
+                key={pkg.id}
+                className={`border-2 rounded-lg p-4 hover:shadow-md transition-shadow ${
+                  pkg.packageType === 'PACKAGE' ? 'border-blue-200 bg-blue-50' :
+                  pkg.packageType === 'TRIP' ? 'border-purple-200 bg-purple-50' :
+                  'border-green-200 bg-green-50'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900">{pkg.packageName}</h4>
+                    <span className={`inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full ${
+                      pkg.packageType === 'PACKAGE' ? 'bg-blue-100 text-blue-800' :
+                      pkg.packageType === 'TRIP' ? 'bg-purple-100 text-purple-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {pkg.packageType}
+                    </span>
+                  </div>
+                </div>
+
+                {pkg.description && (
+                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                    {pkg.description}
+                  </p>
+                )}
+
+                <div className="space-y-2 text-sm">
+                  {/* Package Type Details */}
+                  {pkg.packageType === 'PACKAGE' && (
+                    <>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                        <span className="text-gray-600">Monthly Rate:</span>
+                        <span className="font-bold text-blue-700">₹{pkg.monthlyRate?.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-600">Included:</span>
+                        <span className="font-medium">{pkg.tripsIncluded} trips, {pkg.kmsIncluded} km</span>
+                      </div>
+                      {pkg.extraTripRate && (
+                        <div className="flex justify-between items-center py-1 text-xs">
+                          <span className="text-gray-600">Extra Trip:</span>
+                          <span>₹{pkg.extraTripRate}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {pkg.packageType === 'TRIP' && (
+                    <>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                        <span className="text-gray-600">Per Trip:</span>
+                        <span className="font-bold text-purple-700">₹{pkg.ratePerTrip}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-600">Per Km:</span>
+                        <span className="font-medium">₹{pkg.ratePerKm}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 text-xs">
+                        <span className="text-gray-600">Standard:</span>
+                        <span>{pkg.standardTripKm} km, {pkg.standardTripHours} hr</span>
+                      </div>
+                    </>
+                  )}
+
+                  {pkg.packageType === 'HYBRID' && (
+                    <>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                        <span className="text-gray-600">Base Rate:</span>
+                        <span className="font-bold text-green-700">₹{pkg.monthlyRate?.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-600">Included:</span>
+                        <span className="font-medium">{pkg.tripsIncluded} trips</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-600">Extra Trip:</span>
+                        <span>₹{pkg.ratePerTrip}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Common charges */}
+                  <div className="pt-2 mt-2 border-t border-gray-300">
+                    <div className="text-xs space-y-1">
+                      {pkg.extraKmRate && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Extra Km:</span>
+                          <span>₹{pkg.extraKmRate}/km</span>
+                        </div>
+                      )}
+                      {pkg.extraHourRate && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Extra Hour:</span>
+                          <span>₹{pkg.extraHourRate}/hr</span>
+                        </div>
+                      )}
+                      {pkg.peakHourMultiplier && pkg.peakHourMultiplier > 1 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Peak Multiplier:</span>
+                          <span>{pkg.peakHourMultiplier}x</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Billing Model Details */}
       {billingDetails && (

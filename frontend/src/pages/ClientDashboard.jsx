@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../utils/api'
+import api from '../utils/api'
 import { 
   Building2, Users, Car, TrendingUp, FileText, 
   Calendar, DollarSign, Download, Filter, Search
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
@@ -37,32 +39,101 @@ const ClientDashboard = () => {
       const employeesResponse = await authApi.get(`/users/tenant/${user.tenantId}`)
       const employeesList = employeesResponse.data.filter(u => u.role === 'EMPLOYEE')
       
-      // TODO: Fetch trips and vendor data from trip-service when available
-      // const tripsResponse = await tripApi.get(`/trips/tenant/${user.tenantId}`)
+      // Fetch all trips for the client
+      const tripsResponse = await api.get(`http://localhost:4020/trips/client/${user.tenantId}`)
+      const allTrips = tripsResponse.data || []
       
-      setEmployees(employeesList.map(emp => ({
+      // Fetch all vendors to get names
+      const allVendorsResponse = await api.get(`http://localhost:4015/vendors`)
+      const allVendors = allVendorsResponse.data || []
+      const vendorMap = {}
+      allVendors.forEach(v => {
+        vendorMap[v.id] = v.companyName
+      })
+      
+      // Fetch active vendors with packages for this client
+      const vendorsResponse = await api.get(`http://localhost:4015/vendors/client/${user.tenantId}/with-packages`)
+      const activeVendorsList = vendorsResponse.data || []
+      
+      // Calculate employee spending
+      const employeeSpendingMap = {}
+      let totalSpending = 0
+      
+      allTrips.forEach(trip => {
+        const employeeId = trip.employeeId
+        if (!employeeSpendingMap[employeeId]) {
+          employeeSpendingMap[employeeId] = {
+            trips: 0,
+            spending: 0
+          }
+        }
+        employeeSpendingMap[employeeId].trips++
+        employeeSpendingMap[employeeId].spending += parseFloat(trip.totalCost || 0)
+        totalSpending += parseFloat(trip.totalCost || 0)
+      })
+      
+      // Map employees with their spending data
+      const employeesWithSpending = employeesList.map(emp => ({
         id: emp.id,
         name: `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.email,
         email: emp.email,
         department: emp.department || 'N/A',
-        trips: 0, // TODO: Get from trip service
-        spending: 0, // TODO: Calculate from trips
-      })))
+        trips: employeeSpendingMap[emp.id]?.trips || 0,
+        spending: employeeSpendingMap[emp.id]?.spending || 0,
+      }))
       
-      // Start with empty data for vendors and trips - will populate when integrated
-      setVendorPayments([])
-      setMonthlyData([])
+      setEmployees(employeesWithSpending)
+      
+      // Calculate vendor payment distribution
+      const vendorPaymentMap = {}
+      allTrips.forEach(trip => {
+        const vendorId = trip.vendorId
+        if (!vendorPaymentMap[vendorId]) {
+          vendorPaymentMap[vendorId] = {
+            vendorId: vendorId,
+            vendor: vendorMap[vendorId] || 'Unknown Vendor',
+            trips: 0,
+            amount: 0
+          }
+        }
+        vendorPaymentMap[vendorId].trips++
+        vendorPaymentMap[vendorId].amount += parseFloat(trip.totalCost || 0)
+      })
+      
+      const vendorPaymentsArray = Object.values(vendorPaymentMap).map(vendor => ({
+        ...vendor,
+        percentage: totalSpending > 0 ? Math.round((vendor.amount / totalSpending) * 100) : 0
+      }))
+      
+      setVendorPayments(vendorPaymentsArray)
+      
+      // Calculate monthly data (last 6 months)
+      const monthlyMap = {}
+      allTrips.forEach(trip => {
+        if (trip.tripStartTime) {
+          const month = trip.tripStartTime.substring(0, 7) // YYYY-MM
+          if (!monthlyMap[month]) {
+            monthlyMap[month] = { month, trips: 0, spending: 0 }
+          }
+          monthlyMap[month].trips++
+          monthlyMap[month].spending += parseFloat(trip.totalCost || 0)
+        }
+      })
+      
+      const monthlyArray = Object.values(monthlyMap).sort((a, b) => a.month.localeCompare(b.month))
+      setMonthlyData(monthlyArray.slice(-6)) // Last 6 months
       
       // Calculate stats
       setStats({
         totalEmployees: employeesList.length,
-        activeVendors: 0, // TODO: Get from vendor service
-        monthlySpending: 0, // TODO: Calculate from trips
-        totalTrips: 0, // TODO: Get from trip service
+        activeVendors: activeVendorsList.length,
+        monthlySpending: totalSpending,
+        totalTrips: allTrips.length,
       })
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      toast.error('Failed to fetch dashboard data')
       // Set empty state on error
       setEmployees([])
       setStats({
@@ -172,6 +243,7 @@ const ClientDashboard = () => {
             <div>
               <p className="text-green-100 text-sm font-medium">Active Vendors</p>
               <p className="text-3xl font-bold mt-2">{stats.activeVendors}</p>
+              <p className="text-xs text-green-100 mt-1">Available for booking</p>
             </div>
             <div className="bg-white/20 p-3 rounded-lg">
               <Car size={28} />
@@ -285,32 +357,40 @@ const ClientDashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {vendorPayments.map((vendor, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{vendor.vendor}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                    {vendor.trips}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="font-semibold text-green-600">
-                      ₹{vendor.amount.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-full bg-gray-200 rounded-full h-2 mr-2" style={{ maxWidth: '100px' }}>
-                        <div 
-                          className="bg-primary-600 h-2 rounded-full" 
-                          style={{ width: `${vendor.percentage}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-600">{vendor.percentage}%</span>
-                    </div>
+              {vendorPayments.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                    No vendor payments recorded yet
                   </td>
                 </tr>
-              ))}
+              ) : (
+                vendorPayments.map((vendor, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">{vendor.vendor}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                      {vendor.trips}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="font-semibold text-green-600">
+                        ₹{vendor.amount.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2 mr-2" style={{ maxWidth: '100px' }}>
+                          <div 
+                            className="bg-primary-600 h-2 rounded-full" 
+                            style={{ width: `${vendor.percentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm text-gray-600">{vendor.percentage}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -356,34 +436,42 @@ const ClientDashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEmployees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="font-medium text-gray-900">{employee.name}</div>
-                      <div className="text-sm text-gray-500">{employee.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                      {employee.department}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                    {employee.trips}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="font-semibold text-green-600">
-                      ₹{employee.spending.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button className="text-primary-600 hover:text-primary-700 font-medium">
-                      View Details
-                    </button>
+              {filteredEmployees.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                    No employees found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredEmployees.map((employee) => (
+                  <tr key={employee.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="font-medium text-gray-900">{employee.name}</div>
+                        <div className="text-sm text-gray-500">{employee.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        {employee.department}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                      {employee.trips}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`font-semibold ${employee.spending > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                        ₹{employee.spending.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button className="text-primary-600 hover:text-primary-700 font-medium">
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Search, UserCircle } from 'lucide-react'
+import { useState, useEffect, Fragment } from 'react'
+import { Plus, Edit2, Trash2, Search, UserCircle, ChevronDown, ChevronRight, Package } from 'lucide-react'
 import api from '../utils/api'
 import toast from 'react-hot-toast'
 
@@ -9,6 +9,9 @@ const Employees = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState(null)
+  const [expandedEmployee, setExpandedEmployee] = useState(null)
+  const [employeePackages, setEmployeePackages] = useState({})
+  const [loadingPackages, setLoadingPackages] = useState({})
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -46,6 +49,28 @@ const Employees = () => {
       toast.error('Failed to load employees')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchEmployeePackages = async (employeeId) => {
+    // Show immediately if already cached
+    if (employeePackages[employeeId]) {
+      setExpandedEmployee(employeeId)
+      return
+    }
+
+    // Show loading and fetch
+    setExpandedEmployee(employeeId)
+    setLoadingPackages({ ...loadingPackages, [employeeId]: true })
+    try {
+      // Fetch from client-service
+      const response = await api.get(`http://localhost:4010/api/package-assignments/employee/${employeeId}`)
+      setEmployeePackages({ ...employeePackages, [employeeId]: response.data || [] })
+    } catch (error) {
+      console.error('Error fetching employee packages:', error)
+      setEmployeePackages({ ...employeePackages, [employeeId]: [] })
+    } finally {
+      setLoadingPackages({ ...loadingPackages, [employeeId]: false })
     }
   }
 
@@ -158,6 +183,9 @@ const Employees = () => {
                   Department
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Contact
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -177,7 +205,7 @@ const Employees = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center">
+                  <td colSpan="9" className="px-6 py-12 text-center">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                     </div>
@@ -185,70 +213,152 @@ const Employees = () => {
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
                     No employees found
                   </td>
                 </tr>
               ) : (
                 filteredEmployees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <UserCircle className="text-green-600" size={24} />
+                  <Fragment key={employee.id}>
+                    <tr 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onMouseEnter={() => fetchEmployeePackages(employee.id)}
+                      onMouseLeave={() => setExpandedEmployee(null)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                              <UserCircle className="text-green-600" size={24} />
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                              {employee.name}
+                              <Package size={14} className="text-gray-400" title="Hover to view packages" />
+                            </div>
+                            <div className="text-sm text-gray-500">{employee.email}</div>
                           </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{employee.name}</div>
-                          <div className="text-sm text-gray-500">{employee.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.clientName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.department}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.phone}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {employee.homeAddress}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.totalTrips}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                      ₹{employee.incentivesEarned?.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => {
-                          setEditingEmployee(employee)
-                          setFormData({
-                            name: employee.name,
-                            email: employee.email,
-                            phone: employee.phone,
-                            clientName: employee.clientName,
-                            department: employee.department,
-                            homeAddress: employee.homeAddress,
-                          })
-                          setShowModal(true)
-                        }}
-                        className="text-primary-600 hover:text-primary-900 mr-4"
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.clientName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.department}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {employeePackages[employee.id] && employeePackages[employee.id].length > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Subscribed
+                          </span>
+                        ) : employeePackages[employee.id] && employeePackages[employee.id].length === 0 ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            Not Subscribed
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-400">
+                            Unknown
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.phone}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {employee.homeAddress}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {employee.totalTrips}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                        ₹{employee.incentivesEarned?.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setEditingEmployee(employee)
+                            setFormData({
+                              name: employee.name,
+                              email: employee.email,
+                              phone: employee.phone,
+                              clientName: employee.clientName,
+                              department: employee.department,
+                              homeAddress: employee.homeAddress,
+                            })
+                            setShowModal(true)
+                          }}
+                          className="text-primary-600 hover:text-primary-900 mr-4"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(employee.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedEmployee === employee.id && (
+                      <tr 
+                        key={`${employee.id}-packages`}
+                        onMouseEnter={() => setExpandedEmployee(employee.id)}
+                        onMouseLeave={() => setExpandedEmployee(null)}
                       >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(employee.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
+                        <td colSpan="9" className="px-6 py-4 bg-blue-50 border-l-4 border-blue-400">
+                          <div className="pl-4">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                              <Package size={16} className="text-blue-600" />
+                              Assigned Packages
+                            </h4>
+                            {loadingPackages[employee.id] ? (
+                              <div className="flex justify-center py-4">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+                              </div>
+                            ) : employeePackages[employee.id]?.length === 0 ? (
+                              <p className="text-sm text-gray-500 italic">No packages assigned yet</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {employeePackages[employee.id]?.map((pkg) => (
+                                  <div
+                                    key={pkg.id}
+                                    className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm"
+                                  >
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-sm text-gray-900">{pkg.packageName}</span>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                          pkg.packageType === 'PACKAGE' ? 'bg-blue-100 text-blue-800' :
+                                          pkg.packageType === 'TRIP' ? 'bg-purple-100 text-purple-800' :
+                                          'bg-green-100 text-green-800'
+                                        }`}>
+                                          {pkg.packageType}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        Valid: {pkg.validFrom ? new Date(pkg.validFrom).toLocaleDateString() : 'N/A'} 
+                                        {pkg.validUntil && ` - ${new Date(pkg.validUntil).toLocaleDateString()}`}
+                                      </div>
+                                      {pkg.notes && (
+                                        <div className="text-xs text-gray-600 mt-1">Note: {pkg.notes}</div>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Assigned: {pkg.assignedDate ? new Date(pkg.assignedDate).toLocaleDateString() : 'N/A'}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))
               )}
             </tbody>

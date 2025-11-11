@@ -316,47 +316,109 @@ public class BillingCalculationService {
     
     /**
      * Fetch trips from Trip Service
-     * In real implementation, this would call the Trip Service REST API
+     * Calls the Trip Service REST API to get actual trip data
      */
     private List<TripData> fetchTripsForBilling(UUID clientId, UUID vendorId, YearMonth month) {
-        // Mock implementation - In production, call Trip Service API
-        // Example: restTemplate.getForObject(tripServiceUrl + "/trips?clientId=" + clientId + "&vendorId=" + vendorId + "&month=" + month, TripData[].class);
-        
-        // For now, return mock data
-        List<TripData> trips = new ArrayList<>();
-        
-        // Simulate 10 trips for the month
-        for (int i = 0; i < 10; i++) {
-            TripData trip = new TripData();
-            trip.setId(UUID.randomUUID());
-            trip.setDistanceKm(new BigDecimal("15.5"));
-            trip.setDurationHours(new BigDecimal("1.2"));
-            trips.add(trip);
+        try {
+            // Convert YearMonth to LocalDate range (first and last day of month)
+            LocalDate startDate = month.atDay(1);
+            LocalDate endDate = month.atEndOfMonth();
+            
+            // Build URL with query parameters - using the existing endpoint
+            String url = String.format(
+                "%s/trips/client/%s/vendor/%s?startDate=%s&endDate=%s",
+                tripServiceUrl,
+                clientId.toString(),
+                vendorId.toString(),
+                startDate.toString(),
+                endDate.toString()
+            );
+            
+            // Call Trip Service API
+            Map<String, Object>[] tripsArray = restTemplate.getForObject(url, Map[].class);
+            
+            if (tripsArray == null || tripsArray.length == 0) {
+                return new ArrayList<>();
+            }
+            
+            // Convert to TripData objects
+            List<TripData> trips = new ArrayList<>();
+            for (Map<String, Object> tripMap : tripsArray) {
+                TripData trip = new TripData();
+                trip.setId(UUID.fromString((String) tripMap.get("id")));
+                trip.setDistanceKm(new BigDecimal(tripMap.get("distanceKm").toString()));
+                trip.setDurationHours(new BigDecimal(tripMap.get("durationHours").toString()));
+                trips.add(trip);
+            }
+            
+            return trips;
+        } catch (Exception e) {
+            System.err.println("Error fetching trips from Trip Service: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
         }
-        
-        return trips;
     }
     
     /**
      * Fetch billing model from Trip Service
+     * Calls the Trip Service REST API to get the billing model for client-vendor pair
      */
     private BillingModelData fetchBillingModel(UUID clientId, UUID vendorId) {
-        // Mock implementation - In production, call Trip Service API
-        
-        BillingModelData model = new BillingModelData();
-        model.setModelType("PACKAGE"); // Default to PACKAGE for demo
-        model.setPackageMonthlyRate(new BigDecimal("25000"));
-        model.setPackageTripsIncluded(100);
-        model.setPackageKmsIncluded(new BigDecimal("1500"));
-        model.setExtraTripRate(new BigDecimal("400"));
-        model.setExtraKmRate(new BigDecimal("22"));
-        model.setExtraHourRate(new BigDecimal("50"));
-        model.setRatePerTrip(new BigDecimal("300"));
-        model.setRatePerKm(new BigDecimal("20"));
-        model.setStandardTripKm(new BigDecimal("15"));
-        model.setStandardTripHours(new BigDecimal("1"));
-        
-        return model;
+        try {
+            // Build URL
+            String url = String.format(
+                "%s/billing-models/client/%s/vendor/%s",
+                tripServiceUrl,
+                clientId.toString(),
+                vendorId.toString()
+            );
+            
+            // Call Trip Service API
+            Map<String, Object> modelMap = restTemplate.getForObject(url, Map.class);
+            
+            if (modelMap == null) {
+                throw new IllegalArgumentException("No billing model found for client " + clientId + " and vendor " + vendorId);
+            }
+            
+            // Convert to BillingModelData
+            BillingModelData model = new BillingModelData();
+            model.setModelType((String) modelMap.get("modelType"));
+            
+            // Set all fields with safe conversion
+            model.setRatePerTrip(convertToBigDecimal(modelMap.get("ratePerTrip")));
+            model.setRatePerKm(convertToBigDecimal(modelMap.get("ratePerKm")));
+            model.setPackageMonthlyRate(convertToBigDecimal(modelMap.get("packageMonthlyRate")));
+            model.setPackageTripsIncluded(convertToInteger(modelMap.get("packageTripsIncluded")));
+            model.setPackageKmsIncluded(convertToBigDecimal(modelMap.get("packageKmsIncluded")));
+            model.setExtraTripRate(convertToBigDecimal(modelMap.get("extraTripRate")));
+            model.setExtraKmRate(convertToBigDecimal(modelMap.get("extraKmRate")));
+            model.setExtraHourRate(convertToBigDecimal(modelMap.get("extraHourRate")));
+            model.setStandardTripKm(convertToBigDecimal(modelMap.get("standardTripKm")));
+            model.setStandardTripHours(convertToBigDecimal(modelMap.get("standardTripHours")));
+            
+            return model;
+        } catch (Exception e) {
+            System.err.println("Error fetching billing model from Trip Service: " + e.getMessage());
+            e.printStackTrace();
+            throw new IllegalArgumentException("Could not fetch billing model: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Helper method to safely convert Object to BigDecimal
+     */
+    private BigDecimal convertToBigDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        return new BigDecimal(value.toString());
+    }
+    
+    /**
+     * Helper method to safely convert Object to Integer
+     */
+    private Integer convertToInteger(Object value) {
+        if (value == null) return 0;
+        if (value instanceof Integer) return (Integer) value;
+        return Integer.valueOf(value.toString());
     }
     
     // Inner classes for data transfer

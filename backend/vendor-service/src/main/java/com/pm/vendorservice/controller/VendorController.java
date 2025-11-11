@@ -2,6 +2,7 @@ package com.pm.vendorservice.controller;
 
 import com.pm.vendorservice.dto.VendorRequestDTO;
 import com.pm.vendorservice.dto.VendorResponseDTO;
+import com.pm.vendorservice.dto.VendorWithPackagesDTO;
 import com.pm.vendorservice.service.VendorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +18,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/vendors")
 @Tag(name = "Vendor", description = "Vendor/transport provider management endpoints")
+@CrossOrigin(origins = "*")
 public class VendorController {
 
     @Autowired
@@ -92,6 +94,41 @@ public class VendorController {
     public ResponseEntity<Void> deleteVendor(@PathVariable UUID id) {
         vendorService.deleteVendor(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @GetMapping("/{id}/with-packages")
+    @Operation(summary = "Get vendor with subscription packages")
+    public ResponseEntity<VendorWithPackagesDTO> getVendorWithPackages(@PathVariable UUID id) {
+        VendorWithPackagesDTO response = vendorService.getVendorWithPackages(id);
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/with-packages")
+    @Operation(summary = "Get all vendors with their subscription packages")
+    public ResponseEntity<List<VendorWithPackagesDTO>> getAllVendorsWithPackages() {
+        List<VendorWithPackagesDTO> vendors = vendorService.getAllVendorsWithPackages();
+        return ResponseEntity.ok(vendors);
+    }
+    
+    @GetMapping("/email/{email}")
+    @Operation(summary = "Get vendor by contact email")
+    public ResponseEntity<VendorResponseDTO> getVendorByEmail(@PathVariable String email) {
+        VendorResponseDTO response = vendorService.getVendorByEmail(email);
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/email/{email}/with-packages")
+    @Operation(summary = "Get vendor with packages by contact email")
+    public ResponseEntity<VendorWithPackagesDTO> getVendorWithPackagesByEmail(@PathVariable String email) {
+        VendorWithPackagesDTO response = vendorService.getVendorWithPackagesByEmail(email);
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/client/{clientId}/with-packages")
+    @Operation(summary = "Get all vendors with packages for a specific client")
+    public ResponseEntity<List<VendorWithPackagesDTO>> getClientVendorsWithPackages(@PathVariable UUID clientId) {
+        List<VendorWithPackagesDTO> vendors = vendorService.getClientVendorsWithPackages(clientId);
+        return ResponseEntity.ok(vendors);
     }
 }
 

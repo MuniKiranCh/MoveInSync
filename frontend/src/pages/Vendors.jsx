@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Search, Truck, Building2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Truck, Building2, Package } from 'lucide-react'
 import { vendorApi, clientApi } from '../utils/api'
 import toast from 'react-hot-toast'
 
@@ -50,7 +50,8 @@ const Vendors = () => {
   const fetchVendors = async () => {
     setLoading(true)
     try {
-      const response = await vendorApi.get('/vendors')
+      // Fetch vendors with their packages
+      const response = await vendorApi.get('/vendors/with-packages')
       setVendors(response.data)
     } catch (error) {
       toast.error('Failed to load vendors')
@@ -261,6 +262,37 @@ const Vendors = () => {
                   </p>
                 )}
               </div>
+
+              {/* Subscription Packages */}
+              {vendor.packages && vendor.packages.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Package size={14} className="text-primary-600" />
+                    <span className="text-xs font-semibold text-gray-700">
+                      Subscription Packages ({vendor.packages.length})
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {vendor.packages.slice(0, 3).map((pkg) => (
+                      <div key={pkg.id} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-600 truncate">{pkg.packageName}</span>
+                        <span className={`px-2 py-0.5 rounded-full font-medium ml-2 ${
+                          pkg.packageType === 'PACKAGE' ? 'bg-blue-100 text-blue-700' :
+                          pkg.packageType === 'TRIP' ? 'bg-purple-100 text-purple-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {pkg.packageType}
+                        </span>
+                      </div>
+                    ))}
+                    {vendor.packages.length > 3 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        +{vendor.packages.length - 3} more packages
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {vendor.active !== undefined && (
                 <div className="mt-4 pt-4 border-t border-gray-200">

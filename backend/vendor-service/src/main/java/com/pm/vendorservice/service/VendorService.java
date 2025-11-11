@@ -1,7 +1,9 @@
 package com.pm.vendorservice.service;
 
+import com.pm.vendorservice.dto.SubscriptionPackageResponseDTO;
 import com.pm.vendorservice.dto.VendorRequestDTO;
 import com.pm.vendorservice.dto.VendorResponseDTO;
+import com.pm.vendorservice.dto.VendorWithPackagesDTO;
 import com.pm.vendorservice.exception.VendorNotFoundException;
 import com.pm.vendorservice.mapper.VendorMapper;
 import com.pm.vendorservice.model.Vendor;
@@ -23,6 +25,9 @@ public class VendorService {
 
     @Autowired
     private VendorMapper vendorMapper;
+    
+    @Autowired
+    private SubscriptionPackageService packageService;
 
     public VendorResponseDTO createVendor(VendorRequestDTO requestDTO) {
         if (vendorRepository.existsByCode(requestDTO.getCode())) {
@@ -101,6 +106,58 @@ public class VendorService {
             throw new VendorNotFoundException("Vendor not found with id: " + id);
         }
         vendorRepository.deleteById(id);
+    }
+    
+    public VendorWithPackagesDTO getVendorWithPackages(UUID id) {
+        Vendor vendor = vendorRepository.findById(id)
+                .orElseThrow(() -> new VendorNotFoundException("Vendor not found with id: " + id));
+        
+        VendorWithPackagesDTO dto = new VendorWithPackagesDTO();
+        dto.setId(vendor.getId());
+        dto.setName(vendor.getName());
+        dto.setCode(vendor.getCode());
+        dto.setClientId(vendor.getClientId());
+        dto.setServiceType(vendor.getServiceType());
+        dto.setAddress(vendor.getAddress());
+        dto.setContactEmail(vendor.getContactEmail());
+        dto.setContactPhone(vendor.getContactPhone());
+        dto.setContactPerson(vendor.getContactPerson());
+        dto.setTaxId(vendor.getTaxId());
+        dto.setActive(vendor.getActive());
+        dto.setCreatedAt(vendor.getCreatedAt());
+        dto.setUpdatedAt(vendor.getUpdatedAt());
+        
+        // Get all active packages for this vendor
+        List<SubscriptionPackageResponseDTO> packages = packageService.getActivePackagesByVendorId(id);
+        dto.setPackages(packages);
+        
+        return dto;
+    }
+    
+    public List<VendorWithPackagesDTO> getAllVendorsWithPackages() {
+        List<Vendor> vendors = vendorRepository.findAll();
+        return vendors.stream()
+                .map(vendor -> getVendorWithPackages(vendor.getId()))
+                .collect(Collectors.toList());
+    }
+    
+    public VendorResponseDTO getVendorByEmail(String email) {
+        Vendor vendor = vendorRepository.findByContactEmail(email)
+                .orElseThrow(() -> new VendorNotFoundException("Vendor not found with email: " + email));
+        return vendorMapper.toResponseDTO(vendor);
+    }
+    
+    public VendorWithPackagesDTO getVendorWithPackagesByEmail(String email) {
+        Vendor vendor = vendorRepository.findByContactEmail(email)
+                .orElseThrow(() -> new VendorNotFoundException("Vendor not found with email: " + email));
+        return getVendorWithPackages(vendor.getId());
+    }
+    
+    public List<VendorWithPackagesDTO> getClientVendorsWithPackages(UUID clientId) {
+        List<Vendor> vendors = vendorRepository.findByClientIdAndActive(clientId, true);
+        return vendors.stream()
+                .map(vendor -> getVendorWithPackages(vendor.getId()))
+                .collect(Collectors.toList());
     }
 }
 

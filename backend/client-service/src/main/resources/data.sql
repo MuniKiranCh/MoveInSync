@@ -4,7 +4,7 @@
 -- Insert Amazon as the primary client
 INSERT INTO clients (id, name, code, industry, address, contact_email, contact_phone, contact_person, active, created_at, updated_at)
 VALUES (
-    UNHEX(REPLACE('a1111111-1111-1111-1111-111111111111', '-', '')),
+    UNHEX('a1111111111111111111111111111111'),
     'Amazon India',
     'AMZN001',
     'E-Commerce & Technology',
@@ -20,7 +20,7 @@ VALUES (
 -- Insert TechCorp as another client
 INSERT INTO clients (id, name, code, industry, address, contact_email, contact_phone, contact_person, active, created_at, updated_at)
 VALUES (
-    UNHEX(REPLACE('a2222222-2222-2222-2222-222222222222', '-', '')),
+    UNHEX('a2222222222222222222222222222222'),
     'TechCorp Solutions',
     'TECH001',
     'IT Services',
@@ -36,7 +36,7 @@ VALUES (
 -- Insert Infosys as another client
 INSERT INTO clients (id, name, code, industry, address, contact_email, contact_phone, contact_person, active, created_at, updated_at)
 VALUES (
-    UNHEX(REPLACE('a3333333-3333-3333-3333-333333333333', '-', '')),
+    UNHEX('a3333333333333333333333333333333'),
     'Infosys Limited',
     'INFO001',
     'IT Services & Consulting',
@@ -52,7 +52,7 @@ VALUES (
 -- Insert Flipkart as another client
 INSERT INTO clients (id, name, code, industry, address, contact_email, contact_phone, contact_person, active, created_at, updated_at)
 VALUES (
-    UNHEX(REPLACE('a4444444-4444-4444-4444-444444444444', '-', '')),
+    UNHEX('a4444444444444444444444444444444'),
     'Flipkart',
     'FLIP001',
     'E-Commerce',
