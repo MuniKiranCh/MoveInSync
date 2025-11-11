@@ -1,13 +1,15 @@
 import axios from 'axios'
 
 // Base URLs for different services
-const AUTH_BASE_URL = 'http://localhost:4005'
-const CLIENT_BASE_URL = 'http://localhost:4010'
-const VENDOR_BASE_URL = 'http://localhost:4015'
-const TRIP_BASE_URL = 'http://localhost:4020'
-const BILLING_BASE_URL = 'http://localhost:4025'
-const ANALYTICS_BASE_URL = 'http://localhost:4030'
-const EMPLOYEE_BASE_URL = 'http://localhost:4035' // Updated to match new Employee Service
+// Use environment variables for production, fallback to localhost for development
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost'
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_SERVICE_URL || `${BASE_URL}:4005`
+const CLIENT_BASE_URL = import.meta.env.VITE_CLIENT_SERVICE_URL || `${BASE_URL}:4010`
+const VENDOR_BASE_URL = import.meta.env.VITE_VENDOR_SERVICE_URL || `${BASE_URL}:4015`
+const TRIP_BASE_URL = import.meta.env.VITE_TRIP_SERVICE_URL || `${BASE_URL}:4020`
+const BILLING_BASE_URL = import.meta.env.VITE_BILLING_SERVICE_URL || `${BASE_URL}:4025`
+const ANALYTICS_BASE_URL = import.meta.env.VITE_ANALYTICS_SERVICE_URL || `${BASE_URL}:4030`
+const EMPLOYEE_BASE_URL = import.meta.env.VITE_EMPLOYEE_SERVICE_URL || `${BASE_URL}:4035` // Updated to match new Employee Service
 
 // Create axios instances for each service
 export const authApi = axios.create({
